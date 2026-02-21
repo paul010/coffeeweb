@@ -380,3 +380,183 @@ window.addEventListener('scroll', () => {
 backToTop.addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 });
+
+// Theme Toggle
+const themeToggle = document.querySelector('.theme-toggle');
+const themeIcon = document.querySelector('.theme-icon');
+
+// Check for saved theme preference or default to light mode
+const currentTheme = localStorage.getItem('theme') || 'light';
+if (currentTheme === 'dark') {
+    document.documentElement.classList.add('dark-mode');
+    themeIcon.textContent = '☀️';
+}
+
+themeToggle.addEventListener('click', () => {
+    document.documentElement.classList.toggle('dark-mode');
+    const isDark = document.documentElement.classList.contains('dark-mode');
+    themeIcon.textContent = isDark ? '☀️' : '🌙';
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+});
+
+// Search Functionality
+const searchInput = document.getElementById('menuSearch');
+const menuItems = document.querySelectorAll('.menu-item');
+
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+
+        menuItems.forEach(item => {
+            const name = item.querySelector('h3').textContent.toLowerCase();
+            const description = item.querySelector('p').textContent.toLowerCase();
+            const category = item.getAttribute('data-category');
+
+            if (name.includes(searchTerm) || description.includes(searchTerm)) {
+                item.style.display = '';
+                item.classList.remove('hidden');
+            } else {
+                item.style.display = 'none';
+                item.classList.add('hidden');
+            }
+        });
+
+        // Update category buttons when searching
+        const categoryBtns = document.querySelectorAll('.category-btn');
+        categoryBtns.forEach(btn => btn.classList.remove('active'));
+    });
+}
+
+// Open/Closed Status
+function updateOpenStatus() {
+    const openStatusEl = document.getElementById('openStatus');
+    if (!openStatusEl) return;
+
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sunday, 6 = Saturday
+    const hour = now.getHours();
+
+    let isOpen = false;
+    let closingSoon = false;
+
+    // Mon-Fri: 7am - 8pm (19)
+    // Sat-Sun: 8am - 9pm (20)
+
+    if (day >= 1 && day <= 5) {
+        // Weekday
+        if (hour >= 7 && hour < 19) {
+            isOpen = true;
+            if (hour >= 18) {
+                closingSoon = true;
+            }
+        }
+    } else {
+        // Weekend
+        if (hour >= 8 && hour < 20) {
+            isOpen = true;
+            if (hour >= 19) {
+                closingSoon = true;
+            }
+        }
+    }
+
+    if (isOpen) {
+        if (closingSoon) {
+            openStatusEl.textContent = 'Closing Soon';
+            openStatusEl.className = 'open-status closing-soon';
+        } else {
+            openStatusEl.textContent = '🟢 Open Now';
+            openStatusEl.className = 'open-status open';
+        }
+    } else {
+        openStatusEl.textContent = '🔴 Closed';
+        openStatusEl.className = 'open-status closed';
+    }
+}
+
+// Update status every minute and on load
+updateOpenStatus();
+setInterval(updateOpenStatus, 60000);
+
+// Favorites System
+let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+
+function updateFavoriteButtons() {
+    const favButtons = document.querySelectorAll('.favorite-btn');
+    favButtons.forEach(btn => {
+        const menuItem = btn.closest('.menu-item');
+        const itemName = menuItem.querySelector('h3').textContent;
+
+        if (favorites.includes(itemName)) {
+            btn.classList.add('active');
+            btn.textContent = '♥';
+        } else {
+            btn.classList.remove('active');
+            btn.textContent = '♡';
+        }
+    });
+
+    // Update favorites count
+    const favCount = document.querySelector('.favorites-count');
+    if (favCount) {
+        favCount.textContent = `(${favorites.length})`;
+    }
+}
+
+// Add event listeners to favorite buttons
+document.querySelectorAll('.favorite-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const menuItem = btn.closest('.menu-item');
+        const itemName = menuItem.querySelector('h3').textContent;
+
+        if (favorites.includes(itemName)) {
+            favorites = favorites.filter(f => f !== itemName);
+            btn.classList.remove('active');
+            btn.textContent = '♡';
+            showToast(`${itemName} removed from favorites`);
+        } else {
+            favorites.push(itemName);
+            btn.classList.add('active');
+            btn.textContent = '♥';
+            showToast(`${itemName} added to favorites`);
+        }
+
+        localStorage.setItem('favorites', JSON.stringify(favorites));
+        updateFavoriteButtons();
+    });
+});
+
+// Favorites filter
+const favoritesBtn = document.getElementById('favoritesBtn');
+if (favoritesBtn) {
+    favoritesBtn.addEventListener('click', () => {
+        const isActive = favoritesBtn.classList.contains('active');
+
+        // Remove active from all category buttons
+        document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+
+        if (!isActive) {
+            favoritesBtn.classList.add('active');
+            menuItems.forEach(item => {
+                const itemName = item.querySelector('h3').textContent;
+                if (favorites.includes(itemName)) {
+                    item.style.display = '';
+                    item.classList.remove('hidden');
+                } else {
+                    item.style.display = 'none';
+                    item.classList.add('hidden');
+                }
+            });
+        } else {
+            // Show all
+            menuItems.forEach(item => {
+                item.style.display = '';
+                item.classList.remove('hidden');
+            });
+        }
+    });
+}
+
+// Initialize favorite buttons on page load
+updateFavoriteButtons();

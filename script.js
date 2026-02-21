@@ -127,15 +127,12 @@ contactForm.addEventListener('submit', (e) => {
     contactForm.reset();
 });
 
-// Loading screen
+// Loading screen - removed for instant page load
 window.addEventListener('load', () => {
     const loadingScreen = document.querySelector('.loading-screen');
-    setTimeout(() => {
-        loadingScreen.classList.add('hidden');
-        setTimeout(() => {
-            loadingScreen.remove();
-        }, 500);
-    }, 1500);
+    if (loadingScreen) {
+        loadingScreen.remove();
+    }
 });
 
 // Hero parallax effect on mouse move
